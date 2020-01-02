@@ -9,7 +9,7 @@ int main() {
 		auto content = bot::util::get_from_json<std::string>(j["d"], "content");
 		if (content[0] == b.prefix /*&& channel_id == "526518219549442071"*/) {
 			auto author_id = bot::util::get_from_json<std::string>(j["d"]["author"], "id");
-			auto author_username = bot::util::get_from_json<std::string>(j["d"]["username"], "id");
+			auto author_username = bot::util::get_from_json<std::string>(j["d"]["author"], "username");
 			auto channel_id = bot::util::get_from_json<std::string>(j["d"], "channel_id");
 			auto guild_id = bot::util::get_from_json<std::string>(j["d"], "guild_id");
 			if (content.substr(1, 3) == "sub") {
