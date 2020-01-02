@@ -22,7 +22,7 @@ namespace bot::util {
 				{ "Authorization", "Bot " + token },
 				{ "User-Agent", user_agent }
 			}).text);
-		std::cout << "\n" << json << "\n";
+		std::cout << json << "\n";
 		if (!json.contains("url")) {
 			throw std::runtime_error("Error, invalid token.\n\n");
 		}

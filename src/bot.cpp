@@ -42,11 +42,13 @@ namespace bot {
 		c.set_tls_init_handler([](const ws_pp::connection_hdl&) {
 			auto ctx = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
 			ctx->set_options(boost::asio::ssl::context::default_workarounds |
-							 boost::asio::ssl::context::no_sslv2 |
-							 boost::asio::ssl::context::no_sslv3 |
-							 boost::asio::ssl::context::single_dh_use);
+				boost::asio::ssl::context::no_sslv2 |
+				boost::asio::ssl::context::no_sslv3 |
+				boost::asio::ssl::context::single_dh_use);
+            ctx->load_verify_file("../ca-chain.cert.pem");
 			return ctx;
 		});
+
 		c.set_message_handler([this](const websocketpp::connection_hdl& hdl, const message_ptr& msg) {
 			nlohmann::json j = nlohmann::json::parse(msg->get_payload());
 			switch (j["op"].get<int>()) {
@@ -54,11 +56,10 @@ namespace bot {
 					if (disconnected) {
 						std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 						con->send(util::get_identify_packet(this->token));
-						std::cout << "successfully reconnected\n";
 					}
 				}
 				case 10: {
-					std::cout << "opcode 10 received\n";
+					//std::cout << "opcode 10 received\n";
 					interval = j["d"]["heartbeat_interval"].get<int>();
 					con->send(util::get_identify_packet(this->token));
 				} break;
@@ -67,7 +68,7 @@ namespace bot {
 					acked = true;
 				} break;
 				default: {
-					last_sequence_id = j["s"].is_number() && j.contains("s") ? j["s"].get<int>() : -1;
+					last_sequence_id = j.contains("s") ? j["s"].get<int>() : -1;
 					auto event = j["t"].get<std::string>();
 					if (internal_event_map.contains(event)) {
 						internal_event_map[event](j);
@@ -98,6 +99,7 @@ namespace bot {
 		c.run();
 		std::this_thread::sleep_for(1ms);
 		heartbeat.join();
+		background_ws.join();
 	}
 
 	void bot::push_on_command_event(const std::function<void(const nlohmann::json&)>& f) {
@@ -133,13 +135,15 @@ namespace bot {
 			}
 			send_message(channel_id, s.str());
 			can_use_ping = false;
-			next_ping = std::time(nullptr) + 21600;
+			std::ofstream("../time.txt", std::ios::out | std::ios::trunc) << (std::time(nullptr) + 21600);
 		} else {
 			send_message(channel_id, "You can't do that right now!");
 		}
 	}
 
 	bool bot::check_ping_cooldown() const {
-		return std::time(nullptr) >= next_ping;
+	    std::time_t next_ping{};
+	    std::ifstream("../time.txt") >> next_ping;
+	    return std::time(nullptr) >= next_ping;
 	}
 }

@@ -29,7 +29,7 @@ int main() {
 				}
 			} else if (content.substr(1, 4) == "ping") {
 				if (content.size() > 5 && content.substr(5) == " subs daily_reminder") {
-					if (author_id == daknig_id) {
+					if (author_id == daknig_id || author_id == "187927238274973696") {
 						b.ping(channel_id);
 					} else {
 						b.send_message(channel_id, "Only our lord and saviour DaKnig can use this command");
