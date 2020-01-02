@@ -9,6 +9,8 @@
 #include <fstream>
 
 namespace bot::util {
+	inline static const std::string user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36";
+
 	inline std::string get_api_url() {
 		return "https://discordapp.com/api/v6";
 	}
@@ -16,7 +18,10 @@ namespace bot::util {
 	inline std::string get_ws_url(const std::string& token) {
 		auto json = nlohmann::json::parse(cpr::Get(
 			cpr::Url{ get_api_url() + "/gateway/bot" },
-			cpr::Header{{ "Authorization", "Bot " + token }}).text);
+			cpr::Header{
+				{ "Authorization", "Bot " + token },
+				{ "User-Agent", user_agent }
+			}).text);
 		std::cout << json << "\n";
 		try {
 			return json["url"].get<std::string>();
@@ -77,8 +82,6 @@ namespace bot::util {
 		}
 		return Ty{};
 	}
-
-	inline static const std::string user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36";
 }
 
 #endif //DUMB_REMINDER_BOT_UTILS_HPP
