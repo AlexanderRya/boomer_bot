@@ -1,6 +1,7 @@
 #include "bot.hpp"
 
 int main() {
+	const std::string daknig_id = "160412986597441537";
 	std::ifstream f("../token.txt");
 	std::string token{ std::istreambuf_iterator{ f }, {} };
 	bot::bot b(std::move(token), '%');
@@ -28,7 +29,7 @@ int main() {
 				}
 			} else if (content.substr(1, 4) == "ping") {
 				if (content.size() > 5 && content.substr(5) == " subs daily_reminder") {
-					if (author_id == "248901263054471168") {
+					if (author_id == daknig_id) {
 						b.ping(channel_id);
 					} else {
 						b.send_message(channel_id, "Only our lord and saviour DaKnig can use this command");
