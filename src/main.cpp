@@ -1,7 +1,7 @@
 #include "bot.hpp"
 
 int main() {
-	const std::string daknig_id = "160412986597441537";
+	const std::string daknig_id = "248901263054471168";
 	std::ifstream f("../token.txt");
 	std::string token{ std::istreambuf_iterator{ f }, {} };
 	bot::bot b(std::move(token), '%');
@@ -43,6 +43,7 @@ int main() {
 				});
 				if (it != b.reminder_list.end()) {
 					b.reminder_list.erase(it);
+					bot::util::serialize(b.reminder_list);
 					b.send_message(channel_id, "Successfully unsubbed to the daily reminder!");
 				} else {
 					b.send_message(channel_id, "You are not present on the reminder list!");

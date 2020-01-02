@@ -39,7 +39,7 @@ namespace bot {
 
 		const std::string token;
 
-		std::time_t next_ping;
+		std::time_t next_ping = std::time(nullptr);
 
 		std::string name;
 		types::i32 discriminator;
