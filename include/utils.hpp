@@ -14,10 +14,12 @@ namespace bot::util {
 	}
 
 	inline std::string get_ws_url(const std::string& token) {
+		auto json = nlohmann::json::parse(cpr::Get(
+			cpr::Url{ get_api_url() + "/gateway/bot" },
+			cpr::Header{{ "Authorization", "Bot " + token }}).text);
+		std::cout << json << "\n";
 		try {
-			return nlohmann::json::parse(cpr::Get(
-				cpr::Url{ get_api_url() + "/gateway/bot" },
-				cpr::Header{{ "Authorization", "Bot " + token }}).text)["url"].get<std::string>();
+			return json["url"].get<std::string>();
 		} catch (...) {
 			std::cout << "Error, invalid token.\n\n";
 			std::abort();
@@ -66,6 +68,14 @@ namespace bot::util {
 			out << username << ',' << id << "\n";
 		}
 		out.close();
+	}
+
+	template <typename Ty>
+	inline Ty get_from_json(const nlohmann::json& j, const char* key) {
+		if (j.contains(key)) {
+			return j[key].get<Ty>();
+		}
+		return Ty{};
 	}
 
 	inline static const std::string user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36";

@@ -5,7 +5,6 @@ namespace bot {
 	: token(std::move(token)),
 	prefix(prefix) {
 		internal_event_map["READY"] = [this](const nlohmann::json& j) {
-			std::cout << "READY json: " << j << "\n";
 			heartbeat = std::thread([this]() {
 				nlohmann::json data{
 					{ "op", 1 },

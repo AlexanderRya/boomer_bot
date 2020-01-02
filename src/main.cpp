@@ -6,12 +6,12 @@ int main() {
 	bot::bot b(std::move(token), '%');
 	bot::util::deserialize(b.reminder_list);
 	b.push_on_command_event([&b](const nlohmann::json& j) {
-		auto author_id = j["d"]["author"]["id"].get<std::string>();
-		auto author_username = j["d"]["author"]["username"].get<std::string>();
-		auto channel_id = j["d"]["channel_id"].get<std::string>();
-		auto guild_id = j["d"]["guild_id"].get<std::string>();
-		auto content = j["d"]["content"].get<std::string>();
+		auto content = bot::util::get_from_json<std::string>(j["d"], "content");
 		if (content[0] == b.prefix /*&& channel_id == "526518219549442071"*/) {
+			auto author_id = bot::util::get_from_json<std::string>(j["d"]["author"], "id");
+			auto author_username = bot::util::get_from_json<std::string>(j["d"]["username"], "id");
+			auto channel_id = bot::util::get_from_json<std::string>(j["d"], "channel_id");
+			auto guild_id = bot::util::get_from_json<std::string>(j["d"], "guild_id");
 			if (content.substr(1, 3) == "sub") {
 				if (content.size() > 4 && content.substr(4) == " to daily_reminder") {
 					if (std::find_if(b.reminder_list.begin(), b.reminder_list.end(), [&](const auto& user) {
