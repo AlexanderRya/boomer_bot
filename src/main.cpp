@@ -6,7 +6,7 @@ int main() {
 	std::string token{ std::istreambuf_iterator{ f }, {} };
 	bot::bot b(std::move(token), '%');
 	bot::util::deserialize(b.reminder_list);
-	b.push_on_command_event([&b](const nlohmann::json& j) {
+	b.push_on_command_event([&b, &daknig_id](const nlohmann::json& j) {
 		auto content = bot::util::get_from_json<std::string>(j["d"], "content");
 		if (content[0] == b.prefix /*&& channel_id == "526518219549442071"*/) {
 			auto author_id = bot::util::get_from_json<std::string>(j["d"]["author"], "id");

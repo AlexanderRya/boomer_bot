@@ -22,13 +22,11 @@ namespace bot::util {
 				{ "Authorization", "Bot " + token },
 				{ "User-Agent", user_agent }
 			}).text);
-		std::cout << json << "\n";
-		try {
-			return json["url"].get<std::string>();
-		} catch (...) {
-			std::cout << "Error, invalid token.\n\n";
-			std::abort();
+		std::cout << "\n" << json << "\n";
+		if (!json.contains("url")) {
+			throw std::runtime_error("Error, invalid token.\n\n");
 		}
+		return json["url"].get<std::string>();
 	}
 
 	inline std::string get_identify_packet(const std::string& token) {

@@ -122,7 +122,7 @@ namespace bot {
 
 	void bot::ping(const types::snowflake& channel_id) {
 		using namespace std::chrono_literals;
-		can_use_ping = check_ping_delay();
+		can_use_ping = check_ping_cooldown();
 		if (can_use_ping) {
 			std::stringstream s{};
 			if (reminder_list.empty()) {
@@ -133,13 +133,13 @@ namespace bot {
 			}
 			send_message(channel_id, s.str());
 			can_use_ping = false;
-			next_ping = std::time(nullptr) + 10;
+			next_ping = std::time(nullptr) + 21600;
 		} else {
 			send_message(channel_id, "You can't do that right now!");
 		}
 	}
 
-	bool bot::check_ping_delay() {
+	bool bot::check_ping_cooldown() const {
 		return std::time(nullptr) >= next_ping;
 	}
 }

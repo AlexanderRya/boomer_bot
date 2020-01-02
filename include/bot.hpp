@@ -21,6 +21,7 @@
 
 namespace bot {
 	namespace ws_pp = websocketpp;
+
 	class bot {
 		using client = ws_pp::client<ws_pp::config::asio_tls_client>;
 		using message_ptr = ws_pp::config::asio_client::message_type::ptr;
@@ -61,7 +62,7 @@ namespace bot {
 		void push_on_command_event(const std::function<void(const nlohmann::json&)>&);
 		void send_message(const types::snowflake&, const std::string&) const;
 		void ping(const types::snowflake& channel_id);
-		bool check_ping_delay();
+		bool check_ping_cooldown() const;
 	};
 }
 
