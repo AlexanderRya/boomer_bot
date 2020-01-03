@@ -30,8 +30,6 @@ namespace bot {
 		client c;
 		client::connection_ptr con;
 
-		std::thread background_ws;
-
 		bool connection_closed = false;
 		bool acked = true;
 		bool disconnected = false;
@@ -47,6 +45,7 @@ namespace bot {
 		types::i32 interval;
 
 		std::thread heartbeat;
+		std::thread gateway_thread;
 
 		std::unordered_map<std::string, std::function<void(const nlohmann::json&)>> internal_event_map;
 		std::unordered_map<std::string, std::function<void(const nlohmann::json&)>> event_map;
@@ -56,6 +55,7 @@ namespace bot {
 		std::vector<std::pair<std::string, types::snowflake>> reminder_list;
 
 		bot(std::string token, const char prefix);
+        void handle_gateway();
 		void run();
 		void push_on_command_event(const std::function<void(const nlohmann::json&)>&);
 		void send_message(const types::snowflake&, const std::string&) const;

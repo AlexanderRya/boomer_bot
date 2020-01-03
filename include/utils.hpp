@@ -7,6 +7,8 @@
 #include <cpr/cpr.h>
 #include <iostream>
 #include <fstream>
+#include <websocketpp/client.hpp>
+#include <websocketpp/config/asio_client.hpp>
 
 namespace bot::util {
 	inline static const std::string user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36";
@@ -57,7 +59,7 @@ namespace bot::util {
 
 	inline void deserialize(std::vector<std::pair<std::string, types::snowflake>>& v) {
 		std::ifstream in("../daily_reminder.txt");
-		std::string str;
+		std::string str{};
 		while (std::getline(in, str)) {
 			auto item = split(str, ",");
 			v.emplace_back(item[0], item[1]);
@@ -80,6 +82,76 @@ namespace bot::util {
 		}
 		return Ty{};
 	}
+
+    inline bool verify_subject_alternative_name(const char* hostname, X509* cert) {
+        STACK_OF(GENERAL_NAME) * san_names = nullptr;
+        san_names = (STACK_OF(GENERAL_NAME)*)X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr);
+
+        if (san_names == nullptr) {
+            return false;
+        }
+
+        int san_names_count = sk_GENERAL_NAME_num(san_names);
+
+        bool result = false;
+
+        for (int i = 0; i < san_names_count; i++) {
+            const GENERAL_NAME* current_name = sk_GENERAL_NAME_value(san_names, i);
+            if (current_name->type != GEN_DNS) {
+                continue;
+            }
+
+            char* dns_name = (char*)ASN1_STRING_data(current_name->d.dNSName);
+            if (ASN1_STRING_length(current_name->d.dNSName) != strlen(dns_name)) {
+                break;
+            }
+
+            result = (strcasecmp(hostname, dns_name) == 0);
+        }
+
+        sk_GENERAL_NAME_pop_free(san_names, GENERAL_NAME_free);
+
+        return result;
+    }
+
+    inline bool verify_common_name(const char* hostname, X509* cert) {
+        int common_name_loc = X509_NAME_get_index_by_NID(X509_get_subject_name(cert), NID_commonName, -1);
+        if (common_name_loc < 0) {
+            return false;
+        }
+
+        X509_NAME_ENTRY* common_name_entry = X509_NAME_get_entry(X509_get_subject_name(cert), common_name_loc);
+        if (common_name_entry == nullptr) {
+            return false;
+        }
+
+        ASN1_STRING* common_name_asn1 = X509_NAME_ENTRY_get_data(common_name_entry);
+        if (common_name_asn1 == nullptr) {
+            return false;
+        }
+
+        char* common_name_str = (char*)ASN1_STRING_data(common_name_asn1);
+        if (ASN1_STRING_length(common_name_asn1) != strlen(common_name_str)) {
+            return false;
+        }
+        return (strcasecmp(hostname, common_name_str) == 0);
+    }
+
+    inline bool verify_certificate(const char* hostname, bool preverified, boost::asio::ssl::verify_context &ctx) {
+        int depth = X509_STORE_CTX_get_error_depth(ctx.native_handle());
+
+        if (depth == 0 && preverified) {
+            X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
+
+            if (verify_subject_alternative_name(hostname, cert)) {
+                return true;
+            } else {
+                return verify_common_name(hostname, cert);
+            }
+        }
+
+        return preverified;
+    }
 }
 
 #endif //DUMB_REMINDER_BOT_UTILS_HPP

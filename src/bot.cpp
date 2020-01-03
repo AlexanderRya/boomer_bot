@@ -6,14 +6,14 @@ namespace bot {
 	prefix(prefix) {
 		internal_event_map["READY"] = [this](const nlohmann::json& j) {
 			heartbeat = std::thread([this]() {
-				nlohmann::json data{
-					{ "op", 1 },
-					{ "d", nullptr }
-				};
-				if (last_sequence_id != -1) {
-					data["d"] = last_sequence_id;
-				}
 				while (!connection_closed) {
+                    nlohmann::json data{
+                        { "op", 1 },
+                        { "d", nullptr }
+                    };
+                    if (last_sequence_id != -1) {
+                        data["d"] = last_sequence_id;
+                    }
 					con->send(data.dump());
 					std::cout << "sent opcode 11\n";
 					acked = false;
@@ -33,73 +33,85 @@ namespace bot {
 			discriminator = std::stoi(j["d"]["user"]["discriminator"].get<std::string>());
 			std::cout << fmt::format("READY\nLogged in as: {}#{}\n\n", name, discriminator);
 		};
-
-		c.set_access_channels(websocketpp::log::alevel::all);
-		c.clear_access_channels(websocketpp::log::alevel::frame_payload);
-		c.set_error_channels(websocketpp::log::elevel::all);
-		c.init_asio();
-
-		c.set_tls_init_handler([](const ws_pp::connection_hdl&) {
-			auto ctx = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
-			ctx->set_options(boost::asio::ssl::context::default_workarounds |
-				boost::asio::ssl::context::no_sslv2 |
-				boost::asio::ssl::context::no_sslv3 |
-				boost::asio::ssl::context::single_dh_use);
-            ctx->load_verify_file("../ca-chain.cert.pem");
-			return ctx;
-		});
-
-		c.set_message_handler([this](const websocketpp::connection_hdl& hdl, const message_ptr& msg) {
-			nlohmann::json j = nlohmann::json::parse(msg->get_payload());
-			switch (j["op"].get<int>()) {
-				case 9: {
-					if (disconnected) {
-						std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-						con->send(util::get_identify_packet(this->token));
-					}
-				}
-				case 10: {
-					//std::cout << "opcode 10 received\n";
-					interval = j["d"]["heartbeat_interval"].get<int>();
-					con->send(util::get_identify_packet(this->token));
-				} break;
-				case 11: {
-					std::cout << "acked! json: " << j << "\n";
-					acked = true;
-				} break;
-				default: {
-					last_sequence_id = j.contains("s") ? j["s"].get<int>() : -1;
-					auto event = j["t"].get<std::string>();
-					if (internal_event_map.contains(event)) {
-						internal_event_map[event](j);
-					} else if (event_map.contains(event)) {
-						event_map[event](j);
-					} else {
-						//std::cout << event << " (unhandled)\n";
-					}
-				} break;
-			}
-		});
-		c.start_perpetual();
-
-		ws_pp::lib::error_code ec;
-		con = c.get_connection(util::get_ws_url(this->token), ec);
-
-		if (ec) {
-			throw std::runtime_error("connect initialization error: " + ec.message());
-		}
-
-		background_ws = std::thread(&client::run, &c);
-
-		c.connect(con);
 	}
+
+    void bot::handle_gateway() {
+        std::string uri = util::get_ws_url(this->token);
+
+        c.set_access_channels(websocketpp::log::alevel::all);
+        c.clear_access_channels(websocketpp::log::alevel::frame_payload);
+        c.set_error_channels(websocketpp::log::elevel::all);
+
+        c.init_asio();
+
+        c.set_message_handler([this](const websocketpp::connection_hdl&, const message_ptr& msg) {
+            nlohmann::json j = nlohmann::json::parse(msg->get_payload());
+            switch (j["op"].get<int>()) {
+                case 9: {
+                    if (disconnected) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+                        con->send(util::get_identify_packet(this->token));
+                    }
+                } break;
+                case 10: {
+                    //std::cout << "opcode 10 received\n";
+                    interval = j["d"]["heartbeat_interval"].get<int>();
+                    con->send(util::get_identify_packet(this->token));
+                } break;
+                case 11: {
+                    std::cout << "acked! json: " << j << "\n";
+                    acked = true;
+                } break;
+                default: {
+                    last_sequence_id = j.contains("s") ? j["s"].get<int>() : -1;
+                    auto event = j["t"].get<std::string>();
+                    if (internal_event_map.contains(event)) {
+                        internal_event_map[event](j);
+                    } else if (event_map.contains(event)) {
+                        event_map[event](j);
+                    } else {
+                        //std::cout << event << " (unhandled)\n";
+                    }
+                } break;
+            }
+        });
+        c.set_tls_init_handler([](const websocketpp::connection_hdl&) {
+            auto ctx = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
+            try {
+                ctx->set_options(boost::asio::ssl::context::default_workarounds |
+                                 boost::asio::ssl::context::no_sslv2 |
+                                 boost::asio::ssl::context::no_sslv3 |
+                                 boost::asio::ssl::context::single_dh_use);
+                ctx->set_verify_mode(boost::asio::ssl::verify_peer);
+                ctx->set_verify_callback([](const bool preverified, boost::asio::ssl::verify_context& ictx) {
+                    return util::verify_certificate("discord.gg", preverified, ictx);
+                });
+                ctx->load_verify_file("../ca-chain.cert.pem");
+            } catch (std::exception& e) {
+                std::cout << e.what() << "\n";
+            }
+            return ctx;
+        });
+
+        ws_pp::lib::error_code ec;
+        con = c.get_connection(uri, ec);
+
+        if (ec) {
+            throw std::runtime_error("connect initialization error: " + ec.message());
+        }
+
+        c.connect(con);
+        c.run();
+    }
 
 	void bot::run() {
 		using namespace std::chrono_literals;
-		c.run();
-		std::this_thread::sleep_for(1ms);
+		gateway_thread = std::thread(&bot::handle_gateway, this);
+		while (true) {
+            std::this_thread::sleep_for(10ms);
+        }
 		heartbeat.join();
-		background_ws.join();
+		gateway_thread.join();
 	}
 
 	void bot::push_on_command_event(const std::function<void(const nlohmann::json&)>& f) {
