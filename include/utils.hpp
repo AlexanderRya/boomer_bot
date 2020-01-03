@@ -61,7 +61,7 @@ namespace bot::util {
         std::ifstream in("../daily_reminder.txt");
         std::string str{};
         while (std::getline(in, str)) {
-            auto item = split(str, ",");
+            auto item = split(str.substr(10), " | id: ");
             v.emplace_back(item[0], item[1]);
         }
         in.close();
@@ -70,7 +70,7 @@ namespace bot::util {
     inline void serialize(const std::vector<std::pair<std::string, types::snowflake>>& v) {
         std::ofstream out("../daily_reminder.txt", std::ios::out | std::ios::trunc);
         for (const auto&[username, id] : v) {
-            out << username << ',' << id << "\n";
+            out << "username: " << username << " | id: " << id << "\n";
         }
         out.close();
     }
