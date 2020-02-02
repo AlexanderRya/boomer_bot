@@ -1,6 +1,14 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
+    <Objective-C>
+      <option name="CLASS_CONSTRUCTOR_INIT_LIST_NEW_LINE_BEFORE_COLON" value="1" />
+      <option name="SUPERCLASS_LIST_BEFORE_COLON" value="0" />
+    </Objective-C>
     <codeStyleSettings language="ObjectiveC">
+      <option name="RIGHT_MARGIN" value="160" />
+      <option name="BLANK_LINES_AROUND_METHOD_IN_INTERFACE" value="0" />
+      <option name="ALIGN_MULTILINE_CHAINED_METHODS" value="true" />
+      <option name="METHOD_CALL_CHAIN_WRAP" value="1" />
       <indentOptions>
         <option name="CONTINUATION_INDENT_SIZE" value="4" />
       </indentOptions>
